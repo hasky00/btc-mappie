@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="description" content="A community-maintained Bitcoin map powered by Nostr. Discover and publish signed listings for merchants, meetups, ATMs, and services." />
+  <meta name="theme-color" content="#0b0f14" />
+  <title>Bitcoin Map on Nostr — Signed, portable listings</title>
+
+  <!-- Open Graph -->
+  <meta property="og:title" content="Bitcoin Map on Nostr" />
+  <meta property="og:description" content="Find and organize Bitcoin-friendly places. Publish signed listings via Nostr relays." />
+  <meta property="og:type" content="website" />
+  <meta property="og:image" content="hero-preview.png" />
+  <meta property="og:url" content="YOUR_LANDING_PAGE_URL" />
+
+  <style>
+    :root{
+      --bg:#0b0f14;
+      --panel:#0f1621;
+      --text:#e7eef8;
+      --muted:#a9b6c7;
+      --line:rgba(255,255,255,.10);
+      --accent:#f7931a; /* bitcoin orange */
+      --accent2:#7dd3fc; /* subtle nostr-ish highlight */
+      --shadow: 0 18px 60px rgba(0,0,0,.45);
+      --radius: 16px;
+      --max: 1120px;
+      --font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+
+    *{ box-sizing:border-box; }
+    html{ scroll-behavior:smooth; }
+    body{
+      margin:0;
+      font-family:var(--font);
+      background:
+        radial-gradient(900px 500px at 15% 10%, rgba(247,147,26,.18), transparent 60%),
+        radial-gradient(700px 420px at 85% 15%, rgba(125,211,252,.14), transparent 55%),
+        radial-gradient(800px 520px at 50% 95%, rgba(247,147,26,.10), transparent 60%),
+        var(--bg);
+      color:var(--text);
+      line-height:1.5;
+    }
+
+    a{ color:inherit; text-decoration:none; }
+    .container{ max-width:var(--max); margin:0 auto; padding:0 20px; }
+
+    /* Top bar */
+    .topbar{
+      position:sticky; top:0; z-index:10;
+      backdrop-filter: blur(10px);
+      background: rgba(11,15,20,.72);
+      border-bottom:1px solid var(--line);
+    }
+    .topbar-inner{
+      display:flex; align-items:center; justify-content:space-between;
+      padding:14px 0;
+      gap:14px;
+    }
+    .brand{
+      display:flex; align-items:center; gap:10px;
+      font-weight:700; letter-spacing:.2px;
+    }
+    .logo{
+      width:34px; height:34px; border-radius:10px;
+      background:
+        radial-gradient(circle at 30% 30%, rgba(255,255,255,.25), transparent 50%),
+        linear-gradient(135deg, rgba(247,147,26,1), rgba(247,147,26,.35));
+      box-shadow: 0 10px 30px rgba(247,147,26,.18);
+      border:1px solid rgba(255,255,255,.12);
+    }
+    .nav{
+      display:flex; gap:14px; align-items:center;
+      color:var(--muted);
+      font-weight:600;
+      font-size:14px;
+    }
+    .nav a{ padding:8px 10px; border-radius:10px; }
+    .nav a:hover{ background: rgba(255,255,255,.06); color:var(--text); }
+
+    /* Buttons */
+    .btn-row{ display:flex; gap:12px; flex-wrap:wrap; }
+    .btn{
+      display:inline-flex; align-items:center; justify-content:center;
+      padding:12px 14px;
+      border-radius:12px;
+      font-weight:800;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.06);
+      color:var(--text);
+      box-shadow: 0 10px 30px rgba(0,0,0,.20);
+      transition: transform .08s ease, background .15s ease, border-color .15s ease;
+      user-select:none;
+    }
+    .btn:hover{ background: rgba(255,255,255,.09); border-color: rgba(255,255,255,.18); }
+    .btn:active{ transform: translateY(1px); }
+    .btn.primary{
+      background: linear-gradient(135deg, rgba(247,147,26,1), rgba(247,147,26,.55));
+      border-color: rgba(247,147,26,.55);
+      color:#141414;
+    }
+    .btn.primary:hover{ border-color: rgba(247,147,26,.75); }
+    .btn.ghost{
+      background: transparent;
+    }
+
+    /* Hero */
+    .hero{ padding:64px 0 26px; }
+    .hero-grid{
+      display:grid;
+      grid-template-columns: 1.05fr .95fr;
+      gap:28px;
+      align-items:stretch;
+    }
+    .kicker{
+      display:inline-flex; align-items:center; gap:10px;
+      padding:8px 12px;
+      border:1px solid rgba(255,255,255,.12);
+      background: rgba(255,255,255,.05);
+      border-radius:999px;
+      color:var(--muted);
+      font-weight:700;
+      font-size:13px;
+      width:fit-content;
+    }
+    .dot{
+      width:10px; height:10px; border-radius:999px;
+      background: var(--accent2);
+      box-shadow: 0 0 0 6px rgba(125,211,252,.10);
+    }
+    h1{
+      margin:14px 0 10px;
+      font-size:46px;
+      line-height:1.06;
+      letter-spacing:-.6px;
+    }
+    .lead{
+      margin:0 0 18px;
+      color:var(--muted);
+      font-size:16.5px;
+      max-width: 58ch;
+    }
+    .micro{
+      margin-top:12px;
+      color:var(--muted);
+      font-size:13px;
+    }
+
+    .hero-card{
+      background: linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,.03));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding:18px;
+      display:flex;
+      flex-direction:column;
+      gap:14px;
+      min-height: 320px;
+    }
+    .mock{
+      border-radius: 14px;
+      border:1px dashed rgba(255,255,255,.20);
+      background:
+        radial-gradient(400px 220px at 40% 30%, rgba(247,147,26,.14), transparent 60%),
+        radial-gradient(350px 200px at 70% 65%, rgba(125,211,252,.12), transparent 55%),
+        rgba(0,0,0,.20);
+      height: 210px;
+      display:flex;
+      align-items:center;
+      justify-content:center;
+      color: rgba(231,238,248,.75);
+      font-weight:800;
+      letter-spacing:.2px;
+      text-align:center;
+      padding:16px;
+    }
+    .hero-stats{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:12px;
+    }
+    .stat{
+      padding:12px;
+      border-radius: 14px;
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.04);
+    }
+    .stat .label{ color:var(--muted); font-size:12.5px; font-weight:700; }
+    .stat .value{ font-size:16px; font-weight:900; margin-top:4px; }
+
+    /* Sections */
+    section{ padding: 26px 0; }
+    .section-head{
+      display:flex; align-items:flex-end; justify-content:space-between;
+      gap:18px;
+      margin-bottom: 14px;
+    }
+    h2{
+      margin:0;
+      font-size:26px;
+      letter-spacing:-.2px;
+    }
+    .sub{
+      margin:0;
+      color:var(--muted);
+      max-width: 70ch;
+      font-size:15px;
+    }
+
+    .cards{
+      display:grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap:14px;
+    }
+    .card{
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      border-radius: var(--radius);
+      padding:16px;
+    }
+    .card h3{
+      margin:0 0 8px;
+      font-size:16px;
+      letter-spacing:-.1px;
+    }
+    .card p{ margin:0; color:var(--muted); font-size:14px; }
+
+    .steps{
+      display:grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap:14px;
+    }
+    .step{
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      border-radius: var(--radius);
+      padding:16px;
+    }
+    .badge{
+      width:34px; height:34px;
+      border-radius: 12px;
+      display:flex; align-items:center; justify-content:center;
+      font-weight:900;
+      background: rgba(247,147,26,.18);
+      border: 1px solid rgba(247,147,26,.28);
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+    .step h3{ margin:0 0 6px; font-size:15px; }
+    .step p{ margin:0; color:var(--muted); font-size:14px; }
+
+    /* FAQ */
+    .faq{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:14px;
+    }
+    details{
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.04);
+      border-radius: var(--radius);
+      padding:14px 14px;
+    }
+    summary{
+      cursor:pointer;
+      font-weight:800;
+      list-style:none;
+      outline:none;
+    }
+    summary::-webkit-details-marker{ display:none; }
+    details p{ margin:10px 0 0; color:var(--muted); font-size:14px; }
+
+    /* Footer CTA */
+    .cta{
+      border:1px solid rgba(247,147,26,.22);
+      background: radial-gradient(700px 260px at 30% 30%, rgba(247,147,26,.18), transparent 60%),
+                  rgba(255,255,255,.04);
+      border-radius: var(--radius);
+      padding: 18px;
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:16px;
+      box-shadow: var(--shadow);
+    }
+    .cta h3{ margin:0 0 6px; font-size:18px; }
+    .cta p{ margin:0; color:var(--muted); font-size:14px; }
+
+    footer{
+      padding: 26px 0 40px;
+      color: var(--muted);
+      font-size: 13px;
+      border-top: 1px solid var(--line);
+      margin-top: 26px;
+    }
+    .footer-row{
+      display:flex; align-items:center; justify-content:space-between;
+      gap:12px; flex-wrap:wrap;
+    }
+    .footer-links{ display:flex; gap:12px; flex-wrap:wrap; }
+    .footer-links a{ color: var(--muted); }
+    .footer-links a:hover{ color: var(--text); }
+
+    /* Responsive */
+    @media (max-width: 980px){
+      .hero-grid{ grid-template-columns: 1fr; }
+      .cards{ grid-template-columns: 1fr; }
+      .steps{ grid-template-columns: 1fr 1fr; }
+      .faq{ grid-template-columns: 1fr; }
+      h1{ font-size: 38px; }
+    }
+    @media (max-width: 520px){
+      .steps{ grid-template-columns: 1fr; }
+      h1{ font-size: 34px; }
+      .nav{ display:none; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="topbar">
+    <div class="container">
+      <div class="topbar-inner">
+        <div class="brand">
+          <div class="logo" aria-hidden="true"></div>
+          <div>
+            Bitcoin Map on Nostr
+            <div style="font-size:12px;color:var(--muted);font-weight:700;margin-top:1px;">
+              Signed listings • Portable data
+            </div>
+          </div>
+        </div>
+
+        <nav class="nav">
+          <a href="#why">Why</a>
+          <a href="#how">How it works</a>
+          <a href="#features">Features</a>
+          <a href="#faq">FAQ</a>
+        </nav>
+
+        <div class="btn-row">
+          <a class="btn ghost" href="YOUR_GITHUB_URL" target="_blank" rel="noreferrer">GitHub</a>
+          <a class="btn primary" href="YOUR_APP_URL">Open the Map</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <header class="hero">
+    <div class="container">
+      <div class="hero-grid">
+        <div>
+          <div class="kicker"><span class="dot" aria-hidden="true"></span> Nostr-native Bitcoin directory</div>
+          <h1>Bitcoin-friendly places, organized by the community — powered by Nostr.</h1>
+          <p class="lead">
+            Discover merchants, meetups, ATMs, and services. Add listings that are
+            <strong>cryptographically signed</strong>, portable across relays, and not locked into a single platform.
+          </p>
+
+          <div class="btn-row">
+            <a class="btn primary" href="YOUR_APP_URL">Open the Map</a>
+            <a class="btn" href="YOUR_ADD_PLACE_URL">Add a Place</a>
+            <a class="btn ghost" href="YOUR_NOSTR_PROFILE_URL" target="_blank" rel="noreferrer">Follow on Nostr</a>
+          </div>
+
+          <p class="micro">
+            No email. No account. Use your Nostr signer (NIP-07 / external signer).
+            <strong>Never paste private keys</strong>.
+          </p>
+        </div>
+
+        <div class="hero-card">
+          <div class="mock">
+            Replace this with a screenshot of your app<br/>
+            (map + filters + place card)
+          </div>
+
+          <div class="hero-stats">
+            <div class="stat">
+              <div class="label">Data model</div>
+              <div class="value">Signed events</div>
+            </div>
+            <div class="stat">
+              <div class="label">Publishing</div>
+              <div class="value">Nostr relays</div>
+            </div>
+            <div class="stat">
+              <div class="label">Curation</div>
+              <div class="value">Community lists</div>
+            </div>
+            <div class="stat">
+              <div class="label">Lock-in</div>
+              <div class="value">None</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section id="why">
+      <div class="container">
+        <div class="section-head">
+          <h2>Why this exists</h2>
+          <p class="sub">Centralized maps become stale, fragile, and restrictive. A Bitcoin economy needs open, portable location data.</p>
+        </div>
+
+        <div class="cards">
+          <div class="card">
+            <h3>Maps go stale</h3>
+            <p>Hours, payment support, and “still accepts Lightning” changes constantly. Community updates keep it current.</p>
+          </div>
+          <div class="card">
+            <h3>Platforms disappear</h3>
+            <p>If one app shuts down, you lose everything. Nostr makes contributions portable across relays and clients.</p>
+          </div>
+          <div class="card">
+            <h3>Data gets locked</h3>
+            <p>When listings live in one private database, builders can’t reuse them. Signed events are composable by design.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="how">
+      <div class="container">
+        <div class="section-head">
+          <h2>How it works</h2>
+          <p class="sub">Publish places as signed data. Organize them into shareable lists. Discover using map + filters.</p>
+        </div>
+
+        <div class="steps">
+          <div class="step">
+            <div class="badge">1</div>
+            <h3>Connect</h3>
+            <p>Use a Nostr signer (NIP-07 or external signer) to authenticate without email or passwords.</p>
+          </div>
+          <div class="step">
+            <div class="badge">2</div>
+            <h3>Add or organize</h3>
+            <p>Create a place listing, add tags (Lightning, on-chain, hours), or curate lists by city/topic.</p>
+          </div>
+          <div class="step">
+            <div class="badge">3</div>
+            <h3>Publish</h3>
+            <p>Your client signs the event and publishes it to relays—portable, verifiable, and censorship-resistant.</p>
+          </div>
+          <div class="step">
+            <div class="badge">4</div>
+            <h3>Discover & share</h3>
+            <p>Search on the map, open place cards, and share listings/lists over Nostr to grow adoption.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="features">
+      <div class="container">
+        <div class="section-head">
+          <h2>Built for Bitcoin communities</h2>
+          <p class="sub">A practical directory for real-world spending and meetups, backed by signatures and community curation.</p>
+        </div>
+
+        <div class="cards">
+          <div class="card">
+            <h3>Nostr-native identity</h3>
+            <p>Listings are signed by contributors. Reputation and history can be portable across Nostr clients.</p>
+          </div>
+          <div class="card">
+            <h3>Filters that matter</h3>
+            <p>Lightning / on-chain, “BTC only”, contactless, accessibility, hours, language, and more.</p>
+          </div>
+          <div class="card">
+            <h3>Curated lists</h3>
+            <p>Create collections like “Best coffee in town” or “Meetups this month” and share them as signed data.</p>
+          </div>
+          <div class="card">
+            <h3>Verification signals</h3>
+            <p>Show last-updated timestamps, confirmations, and community notes to reduce stale/false listings.</p>
+          </div>
+          <div class="card">
+            <h3>Open by default</h3>
+            <p>Export and reuse listings. Encourage an ecosystem of clients instead of one gatekeeper.</p>
+          </div>
+          <div class="card">
+            <h3>Privacy-respecting</h3>
+            <p>Minimal tracking. Location features are opt-in. You control what you publish and when.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="faq">
+      <div class="container">
+        <div class="section-head">
+          <h2>FAQ</h2>
+          <p class="sub">Clear answers for new users, merchants, and contributors.</p>
+        </div>
+
+        <div class="faq">
+          <details>
+            <summary>Do I need an account?</summary>
+            <p>No. You connect with a Nostr signer. Your keypair is your identity. Don’t paste private keys into websites—use a signer.</p>
+          </details>
+
+          <details>
+            <summary>How is data verified?</summary>
+            <p>Every listing is signed. The app can display provenance (who published), recency, and community confirmations/notes.</p>
+          </details>
+
+          <details>
+            <summary>Which relays do you use?</summary>
+            <p>Use a relay set that balances reliability and openness. Advanced users can customize their relay list in settings.</p>
+          </details>
+
+          <details>
+            <summary>Can merchants claim their listing?</summary>
+            <p>Yes. Merchants can publish updates from their own Nostr identity, and the app can display “owner published” signals.</p>
+          </details>
+
+          <details>
+            <summary>Is my location tracked?</summary>
+            <p>The landing page should be honest: avoid collecting precise location data unless necessary. If you use geolocation, make it opt-in and explain it clearly.</p>
+          </details>
+
+          <details>
+            <summary>Is this open source?</summary>
+            <p>If it is, link GitHub. If not yet, say “source-available soon” and publish a roadmap.</p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <div class="container">
+        <div class="cta">
+          <div>
+            <h3>Help build the most open Bitcoin map on the internet.</h3>
+            <p>Open the map, add a place, or share a curated list on Nostr.</p>
+          </div>
+          <div class="btn-row">
+            <a class="btn primary" href="YOUR_APP_URL">Open the Map</a>
+            <a class="btn" href="YOUR_ADD_PLACE_URL">Add a Place</a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer>
+    <div class="container">
+      <div class="footer-row">
+        <div>
+          <strong style="color:var(--text);">Bitcoin Map on Nostr</strong><br/>
+          <span>Signed listings • Portable data • Community curation</span>
+        </div>
+        <div class="footer-links">
+          <a href="YOUR_APP_URL">App</a>
+          <a href="YOUR_GITHUB_URL" target="_blank" rel="noreferrer">GitHub</a>
+          <a href="YOUR_NOSTR_PROFILE_URL" target="_blank" rel="noreferrer">Nostr</a>
+          <a href="mailto:YOUR_EMAIL">Contact</a>
+        </div>
+      </div>
+      <div style="margin-top:10px; color:rgba(169,182,199,.85);">
+        © <span id="year"></span> — Built for the Bitcoin + Nostr ecosystem.
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    document.getElementById("year").textContent = new Date().getFullYear();
+  </script>
+</body>
+</html>
