@@ -14,6 +14,12 @@
   <meta property="og:image" content="hero-preview.png" />
   <meta property="og:url" content="YOUR_LANDING_PAGE_URL" />
 
+  <!-- Leaflet.js Map Library -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
   <style>
     :root{
       --bg:#0b0f14;
@@ -302,6 +308,144 @@
     .footer-links a{ color: var(--muted); }
     .footer-links a:hover{ color: var(--text); }
 
+    /* Live Map */
+    .map-wrap{
+      position:relative;
+      border-radius:14px;
+      overflow:hidden;
+      height:320px;
+      border:1px solid var(--line);
+    }
+    #hero-map{
+      height:100%;
+      width:100%;
+      background:#0a0e13;
+      z-index:1;
+    }
+    .map-wrap .leaflet-control-zoom a{
+      background:rgba(15,22,33,.88);
+      color:var(--text);
+      border-color:var(--line);
+    }
+    .map-wrap .leaflet-control-attribution{
+      background:rgba(11,15,20,.7);
+      color:var(--muted);
+      font-size:10px;
+    }
+    .map-wrap .leaflet-control-attribution a{ color:var(--accent2); }
+    .map-overlay{
+      position:absolute;
+      top:12px; left:12px;
+      z-index:600;
+      display:flex; flex-direction:column; gap:8px;
+    }
+    .map-chip{
+      display:inline-flex; align-items:center; gap:6px;
+      padding:7px 12px;
+      border-radius:10px;
+      background:rgba(15,22,33,.88);
+      border:1px solid var(--line);
+      backdrop-filter:blur(8px);
+      font-size:12.5px;
+      font-weight:700;
+      color:var(--text);
+      width:fit-content;
+    }
+    .map-chip .count{ color:var(--accent); }
+    .locate-btn{
+      position:absolute;
+      bottom:12px; right:12px;
+      z-index:600;
+      width:38px; height:38px;
+      border-radius:10px;
+      border:1px solid var(--line);
+      background:rgba(15,22,33,.88);
+      backdrop-filter:blur(8px);
+      color:var(--text);
+      cursor:pointer;
+      display:flex; align-items:center; justify-content:center;
+      transition: background .15s, border-color .15s;
+    }
+    .locate-btn:hover{
+      background:rgba(247,147,26,.2);
+      border-color:rgba(247,147,26,.4);
+    }
+    .locate-btn svg{ width:18px; height:18px; }
+    @keyframes pulse-ring{
+      0%{ transform:scale(.6); opacity:.9; }
+      100%{ transform:scale(2.2); opacity:0; }
+    }
+    .btc-marker{
+      width:22px; height:22px;
+      background:var(--accent);
+      border:2.5px solid #fff;
+      border-radius:50%;
+      box-shadow:0 2px 8px rgba(247,147,26,.45);
+      position:relative;
+    }
+    .btc-marker::after{
+      content:'';
+      position:absolute;
+      top:-4px; left:-4px;
+      width:26px; height:26px;
+      border-radius:50%;
+      background:rgba(247,147,26,.35);
+      animation: pulse-ring 2s ease-out infinite;
+    }
+    .btc-popup .leaflet-popup-content-wrapper{
+      background:rgba(15,22,33,.95);
+      color:var(--text);
+      border:1px solid var(--line);
+      border-radius:12px;
+      box-shadow:0 12px 40px rgba(0,0,0,.5);
+    }
+    .btc-popup .leaflet-popup-tip{ background:rgba(15,22,33,.95); }
+    .btc-popup .leaflet-popup-content{ margin:12px 14px; font-family:var(--font); }
+    .popup-name{
+      font-weight:800; font-size:14px; margin-bottom:4px;
+    }
+    .popup-tags{
+      display:flex; gap:5px; flex-wrap:wrap; margin-top:6px;
+    }
+    .popup-tag{
+      padding:3px 8px;
+      border-radius:6px;
+      font-size:11px;
+      font-weight:700;
+      background:rgba(247,147,26,.15);
+      border:1px solid rgba(247,147,26,.25);
+      color:var(--accent);
+    }
+    .popup-tag.ln{ background:rgba(125,211,252,.12); border-color:rgba(125,211,252,.22); color:var(--accent2); }
+    .popup-meta{
+      margin-top:6px;
+      font-size:11.5px;
+      color:var(--muted);
+    }
+    .map-loading{
+      position:absolute;
+      inset:0;
+      z-index:500;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      justify-content:center;
+      background:rgba(10,14,19,.85);
+      gap:10px;
+      transition: opacity .4s;
+      pointer-events:none;
+    }
+    .map-loading.hidden{ opacity:0; }
+    .map-spinner{
+      width:32px; height:32px;
+      border:3px solid rgba(247,147,26,.2);
+      border-top-color:var(--accent);
+      border-radius:50%;
+      animation: spin .8s linear infinite;
+    }
+    @keyframes spin{ to{ transform:rotate(360deg); } }
+    .map-loading span{ font-size:12.5px; font-weight:700; color:var(--muted); }
+
     /* Responsive */
     @media (max-width: 980px){
       .hero-grid{ grid-template-columns: 1fr; }
@@ -309,11 +453,13 @@
       .steps{ grid-template-columns: 1fr 1fr; }
       .faq{ grid-template-columns: 1fr; }
       h1{ font-size: 38px; }
+      .map-wrap{ height:280px; }
     }
     @media (max-width: 520px){
       .steps{ grid-template-columns: 1fr; }
       h1{ font-size: 34px; }
       .nav{ display:none; }
+      .map-wrap{ height:240px; }
     }
   </style>
 </head>
@@ -371,27 +517,42 @@
         </div>
 
         <div class="hero-card">
-          <div class="mock">
-            Replace this with a screenshot of your app<br/>
-            (map + filters + place card)
+          <div class="map-wrap">
+            <div id="hero-map"></div>
+            <div class="map-overlay">
+              <div class="map-chip">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+                Live data from <span style="color:var(--accent);">BTCMap.org</span>
+              </div>
+              <div class="map-chip">
+                <span class="count" id="merchant-count">0</span> places near you
+              </div>
+            </div>
+            <button class="locate-btn" id="locate-btn" title="Find my location">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3"/><circle cx="12" cy="12" r="8"/></svg>
+            </button>
+            <div class="map-loading" id="map-loading">
+              <div class="map-spinner"></div>
+              <span>Finding Bitcoin places nearby...</span>
+            </div>
           </div>
 
           <div class="hero-stats">
             <div class="stat">
-              <div class="label">Data model</div>
+              <div class="label">Nearby places</div>
+              <div class="value" style="color:var(--accent);" id="stat-places">Loading...</div>
+            </div>
+            <div class="stat">
+              <div class="label">Data source</div>
+              <div class="value">BTCMap + Nostr</div>
+            </div>
+            <div class="stat">
+              <div class="label">Listings</div>
               <div class="value">Signed events</div>
             </div>
             <div class="stat">
-              <div class="label">Publishing</div>
-              <div class="value">Nostr relays</div>
-            </div>
-            <div class="stat">
-              <div class="label">Curation</div>
-              <div class="value">Community lists</div>
-            </div>
-            <div class="stat">
               <div class="label">Lock-in</div>
-              <div class="value">None</div>
+              <div class="value" style="color:var(--accent2);">None</div>
             </div>
           </div>
         </div>
@@ -572,6 +733,333 @@
 
   <script>
     document.getElementById("year").textContent = new Date().getFullYear();
+
+    // ── Live Bitcoin Map ──────────────────────────────────────────────
+    (function () {
+      var DEFAULT_LAT = 48.8566;
+      var DEFAULT_LNG = 2.3522;
+      var DEFAULT_ZOOM = 13;
+      var FETCH_RADIUS_KM = 15;
+
+      // Dark map tiles
+      var map = L.map("hero-map", {
+        zoomControl: true,
+        attributionControl: true,
+      }).setView([DEFAULT_LAT, DEFAULT_LNG], 3);
+
+      L.tileLayer(
+        "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
+        {
+          attribution:
+            '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
+          subdomains: "abcd",
+          maxZoom: 19,
+        }
+      ).addTo(map);
+
+      // Custom Bitcoin marker icon
+      var btcIcon = L.divIcon({
+        className: "",
+        html: '<div class="btc-marker"></div>',
+        iconSize: [22, 22],
+        iconAnchor: [11, 11],
+        popupAnchor: [0, -14],
+      });
+
+      var markerGroup = L.layerGroup().addTo(map);
+      var loadingEl = document.getElementById("map-loading");
+      var countEl = document.getElementById("merchant-count");
+
+      function hideLoading() {
+        loadingEl.classList.add("hidden");
+        setTimeout(function () {
+          loadingEl.style.display = "none";
+        }, 400);
+      }
+
+      function showLoading() {
+        loadingEl.style.display = "flex";
+        loadingEl.classList.remove("hidden");
+      }
+
+      // Build popup HTML for a merchant
+      function popupHtml(el) {
+        var tags = el.osm_json && el.osm_json.tags ? el.osm_json.tags : {};
+        var name = tags.name || tags["name:en"] || "Bitcoin location";
+        var type = tags.amenity || tags.shop || tags.tourism || tags.office || "";
+        var phone = tags.phone || "";
+        var website = tags.website || tags["contact:website"] || "";
+        var ln =
+          tags["payment:lightning"] === "yes" ||
+          tags["currency:XBT:lightning"] === "yes";
+        var onchain =
+          tags["payment:bitcoin"] === "yes" ||
+          tags["currency:XBT"] === "yes";
+
+        var html = '<div class="popup-name">' + escHtml(name) + "</div>";
+        if (type)
+          html +=
+            '<div class="popup-meta" style="text-transform:capitalize;">' +
+            escHtml(type.replace(/_/g, " ")) +
+            "</div>";
+        html += '<div class="popup-tags">';
+        if (ln) html += '<span class="popup-tag ln">Lightning</span>';
+        if (onchain) html += '<span class="popup-tag">On-chain</span>';
+        if (!ln && !onchain) html += '<span class="popup-tag">Bitcoin</span>';
+        html += "</div>";
+        if (phone)
+          html +=
+            '<div class="popup-meta" style="margin-top:6px;">' +
+            escHtml(phone) +
+            "</div>";
+        if (website)
+          html +=
+            '<div class="popup-meta" style="margin-top:3px;"><a href="' +
+            escAttr(website) +
+            '" target="_blank" rel="noreferrer" style="color:var(--accent2);text-decoration:underline;">' +
+            escHtml(
+              website.replace(/^https?:\/\//, "").replace(/\/$/, "")
+            ) +
+            "</a></div>";
+        return html;
+      }
+
+      function escHtml(s) {
+        var d = document.createElement("div");
+        d.textContent = s;
+        return d.innerHTML;
+      }
+      function escAttr(s) {
+        return s
+          .replace(/&/g, "&amp;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
+
+      // Fetch nearby merchants from BTCMap.org API
+      function fetchMerchants(lat, lng) {
+        showLoading();
+        markerGroup.clearLayers();
+        var bounds = getBbox(lat, lng, FETCH_RADIUS_KM);
+        var url =
+          "https://api.btcmap.org/v2/elements?updated_since=2022-01-01T00:00:00.000Z&limit=200";
+
+        fetch(url)
+          .then(function (r) {
+            return r.json();
+          })
+          .then(function (data) {
+            var elements = data;
+            var count = 0;
+            var inBounds = [];
+
+            elements.forEach(function (el) {
+              var osmData = el.osm_json || {};
+              var elLat = osmData.lat;
+              var elLng = osmData.lon;
+
+              // Some elements have center coords instead
+              if (!elLat && osmData.bounds) {
+                elLat =
+                  (osmData.bounds.minlat + osmData.bounds.maxlat) / 2;
+                elLng =
+                  (osmData.bounds.minlon + osmData.bounds.maxlon) / 2;
+              }
+
+              if (!elLat || !elLng) return;
+
+              // Filter to bounding box
+              if (
+                elLat >= bounds.south &&
+                elLat <= bounds.north &&
+                elLng >= bounds.west &&
+                elLng <= bounds.east
+              ) {
+                inBounds.push({ el: el, lat: elLat, lng: elLng });
+              }
+            });
+
+            // If API returned fewer results than we need, also try area-based endpoint
+            if (inBounds.length === 0 && elements.length > 0) {
+              // Fall back to showing all fetched elements on map
+              elements.forEach(function (el) {
+                var osmData = el.osm_json || {};
+                var elLat = osmData.lat;
+                var elLng = osmData.lon;
+                if (!elLat && osmData.bounds) {
+                  elLat =
+                    (osmData.bounds.minlat + osmData.bounds.maxlat) / 2;
+                  elLng =
+                    (osmData.bounds.minlon + osmData.bounds.maxlon) / 2;
+                }
+                if (!elLat || !elLng) return;
+                inBounds.push({ el: el, lat: elLat, lng: elLng });
+              });
+            }
+
+            inBounds.forEach(function (item) {
+              var marker = L.marker([item.lat, item.lng], {
+                icon: btcIcon,
+              });
+              marker.bindPopup(popupHtml(item.el), {
+                className: "btc-popup",
+                maxWidth: 260,
+              });
+              markerGroup.addLayer(marker);
+              count++;
+            });
+
+            countEl.textContent = count;
+            hideLoading();
+
+            // Fit map to show markers if we have some
+            if (count > 0 && markerGroup.getLayers().length > 0) {
+              var group = new L.featureGroup(markerGroup.getLayers());
+              map.fitBounds(group.getBounds().pad(0.15), {
+                maxZoom: 15,
+              });
+            }
+          })
+          .catch(function () {
+            countEl.textContent = "—";
+            hideLoading();
+          });
+      }
+
+      // Also try the area-based endpoint for better local coverage
+      function fetchByArea(lat, lng) {
+        showLoading();
+        markerGroup.clearLayers();
+        var bounds = getBbox(lat, lng, FETCH_RADIUS_KM);
+        var areaUrl =
+          "https://api.btcmap.org/v3/elements?bbox=" +
+          bounds.west + "," + bounds.south + "," + bounds.east + "," + bounds.north +
+          "&limit=200";
+        var fallbackUrl =
+          "https://api.btcmap.org/v2/elements?updated_since=2023-01-01T00:00:00.000Z&limit=200";
+
+        fetch(areaUrl)
+          .then(function (r) {
+            if (!r.ok) throw new Error("v3 not available");
+            return r.json();
+          })
+          .then(function (data) {
+            renderElements(Array.isArray(data) ? data : (data.elements || []), lat, lng, bounds);
+          })
+          .catch(function () {
+            // Fallback to v2 endpoint
+            fetch(fallbackUrl)
+              .then(function (r) { return r.json(); })
+              .then(function (data) {
+                renderElements(Array.isArray(data) ? data : [], lat, lng, bounds);
+              })
+              .catch(function () {
+                countEl.textContent = "—";
+                hideLoading();
+              });
+          });
+      }
+
+      function renderElements(elements, lat, lng, bounds) {
+        var count = 0;
+        elements.forEach(function (el) {
+          var osmData = el.osm_json || el;
+          var elLat = osmData.lat;
+          var elLng = osmData.lon;
+          if (!elLat && osmData.bounds) {
+            elLat = (osmData.bounds.minlat + osmData.bounds.maxlat) / 2;
+            elLng = (osmData.bounds.minlon + osmData.bounds.maxlon) / 2;
+          }
+          if (!elLat || !elLng) return;
+          // If we have bounds, filter; otherwise show all
+          if (bounds && !(elLat >= bounds.south && elLat <= bounds.north &&
+              elLng >= bounds.west && elLng <= bounds.east)) return;
+
+          var marker = L.marker([elLat, elLng], { icon: btcIcon });
+          marker.bindPopup(popupHtml(el), {
+            className: "btc-popup",
+            maxWidth: 260,
+          });
+          markerGroup.addLayer(marker);
+          count++;
+        });
+
+        countEl.textContent = count;
+        hideLoading();
+
+        if (count > 0) {
+          var group = new L.featureGroup(markerGroup.getLayers());
+          map.fitBounds(group.getBounds().pad(0.15), { maxZoom: 15 });
+        } else {
+          map.setView([lat, lng], DEFAULT_ZOOM);
+        }
+      }
+
+      function getBbox(lat, lng, radiusKm) {
+        var latDeg = radiusKm / 111.32;
+        var lngDeg = radiusKm / (111.32 * Math.cos((lat * Math.PI) / 180));
+        return {
+          south: lat - latDeg,
+          north: lat + latDeg,
+          west: lng - lngDeg,
+          east: lng + lngDeg,
+        };
+      }
+
+      // Geolocate and load
+      function geolocate() {
+        if (!navigator.geolocation) {
+          fetchByArea(DEFAULT_LAT, DEFAULT_LNG);
+          return;
+        }
+        navigator.geolocation.getCurrentPosition(
+          function (pos) {
+            var lat = pos.coords.latitude;
+            var lng = pos.coords.longitude;
+            map.setView([lat, lng], DEFAULT_ZOOM);
+
+            // Add user location circle
+            L.circleMarker([lat, lng], {
+              radius: 8,
+              fillColor: "#7dd3fc",
+              fillOpacity: 0.9,
+              color: "#fff",
+              weight: 2.5,
+            })
+              .addTo(map)
+              .bindPopup(
+                '<div style="font-family:var(--font);font-weight:700;font-size:13px;">You are here</div>',
+                { className: "btc-popup" }
+              );
+
+            fetchByArea(lat, lng);
+          },
+          function () {
+            // Permission denied or error — use default
+            fetchByArea(DEFAULT_LAT, DEFAULT_LNG);
+          },
+          { enableHighAccuracy: false, timeout: 8000 }
+        );
+      }
+
+      // Locate button
+      document.getElementById("locate-btn").addEventListener("click", function () {
+        geolocate();
+      });
+
+      // Sync stat counter
+      var statPlaces = document.getElementById("stat-places");
+      var observer = new MutationObserver(function () {
+        var val = countEl.textContent;
+        statPlaces.textContent = val === "0" ? "Searching..." : val + " found";
+      });
+      observer.observe(countEl, { childList: true, characterData: true, subtree: true });
+
+      // Init
+      geolocate();
+    })();
   </script>
 </body>
 </html>
